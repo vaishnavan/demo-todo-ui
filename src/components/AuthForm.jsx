@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
+import "./AuthForm.css";
+import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:8080/api/auth";
 
-const UserForm = ({ todo }) => {
-  // Auth state
-  const [user, setUser] = useState(null);
+const AuthForm = ({ onAuth }) => {
+  const [, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [authMode, setAuthMode] = useState("login"); // or "register"
+  const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState({
     name: "",
     email: "",
@@ -14,12 +15,12 @@ const UserForm = ({ todo }) => {
   });
   const [authError, setAuthError] = useState("");
 
-  // Handle auth form input
+  const navigate = useNavigate();
+
   const handleAuthChange = (e) => {
     setAuthForm({ ...authForm, [e.target.name]: e.target.value });
   };
 
-  // Register
   const handleRegister = (e) => {
     e.preventDefault();
     setAuthError("");
@@ -36,7 +37,9 @@ const UserForm = ({ todo }) => {
           if (data.user && data.user.name) {
             localStorage.setItem("user", data.user.name);
             setUser(data.user.name);
+            if (onAuth) onAuth(data.user.name);
           }
+            navigate("/group-note");
         } else {
           setAuthError(data.message || "Registration failed");
         }
@@ -44,7 +47,6 @@ const UserForm = ({ todo }) => {
       .catch(() => setAuthError("Registration failed"));
   };
 
-  // Login
   const handleLogin = (e) => {
     e.preventDefault();
     setAuthError("");
@@ -64,9 +66,9 @@ const UserForm = ({ todo }) => {
           if (data.user && data.user.name) {
             localStorage.setItem("user", data.user.name);
             setUser(data.user.name);
+              navigate("/group-note");
+            if (onAuth) onAuth(data.user.name);
           }
-          // Reload page after successful login
-          window.location.reload();
         } else {
           setAuthError(data.message || "Login failed");
         }
@@ -74,26 +76,17 @@ const UserForm = ({ todo }) => {
       .catch(() => setAuthError("Login failed"));
   };
 
-  // Logout
-  const handleLogout = () => {
-    setToken("");
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setAuthForm({ name: "", email: "", password: "" });
-  };
-  // On mount, get user from localStorage if available
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       setUser(storedUser);
+      if (onAuth) onAuth(storedUser);
     }
-  }, []);
+  }, [onAuth]);
 
-  // Render
   if (!token) {
     return (
-      <div>
+      <div className="auth-form-container">
         <h2>{authMode === "login" ? "Login" : "Register"}</h2>
         <form onSubmit={authMode === "login" ? handleLogin : handleRegister}>
           {authMode === "register" && (
@@ -125,8 +118,9 @@ const UserForm = ({ todo }) => {
             {authMode === "login" ? "Login" : "Register"}
           </button>
         </form>
-        {authError && <div style={{ color: "red" }}>{authError}</div>}
+        {authError && <div className="error-message">{authError}</div>}
         <button
+          className="toggle-btn"
           onClick={() =>
             setAuthMode(authMode === "login" ? "register" : "login")
           }
@@ -135,18 +129,10 @@ const UserForm = ({ todo }) => {
             ? "Need an account? Register"
             : "Already have an account? Login"}
         </button>
-        {todo.length > 0 && <button onClick={handleLogout}>Logout</button>}
       </div>
     );
   }
-  return (
-    <>
-      <button onClick={handleLogout}>Logout</button>
-      <div>Welcome, {user ? user : "User"}!</div>
-    </>
-  )
-    
-  
+  return null;
 };
 
-export default UserForm;
+export default AuthForm;
